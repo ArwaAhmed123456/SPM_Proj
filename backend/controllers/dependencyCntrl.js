@@ -1,0 +1,75 @@
+import axios from "axios";
+import Dependency from "../models/DependencyModel.js";
+import { calculateHealthScore } from "../utils/healthScore.js";
+
+// Fetch npm package info and vulnerabilities using OSV API
+export const analyzeDependencies = async (req, res) => {
+  try {
+    const { dependencies, fileType } = req.body; // { dependencies: {express: "^4.17.1", ...}, fileType: 'json' or 'txt' }
+    const results = [];
+
+    for (const [pkg, version] of Object.entries(dependencies)) {
+      // Get latest version from npm registry
+      let latestVersion = "unknown";
+      try {
+        const npmData = await axios.get(`https://registry.npmjs.org/${pkg}`);
+        latestVersion = npmData.data["dist-tags"]?.latest || "unknown";
+      } catch (npmErr) {
+        console.warn(`NPM registry error for ${pkg}:`, npmErr.message);
+        // latestVersion remains "unknown"
+      }
+
+      // Fetch vulnerabilities from OSV API
+      let vulnerabilities = 0;
+      try {
+        const osvResponse = await axios.post('https://api.osv.dev/v1/query', {
+          package: { name: pkg, ecosystem: 'npm' },
+          version: version.replace(/[^\d.]/g, '') // Clean version for OSV
+        });
+        if (osvResponse.data && osvResponse.data.vulns && Array.isArray(osvResponse.data.vulns)) {
+          vulnerabilities = osvResponse.data.vulns.length;
+        }
+      } catch (osvErr) {
+        console.warn(`OSV API error for ${pkg}:`, osvErr.message);
+        // vulnerabilities remains 0
+      }
+
+      const outdated = version.replace(/[^\d.]/g, '') !== latestVersion;
+      const healthScore = calculateHealthScore(vulnerabilities, outdated);
+      const riskLevel =
+        healthScore >= 80 ? "Low" : healthScore >= 50 ? "Medium" : "High";
+
+      const dep = new Dependency({
+        name: pkg,
+        version,
+        latestVersion,
+        vulnerabilities,
+        healthScore,
+        riskLevel,
+      });
+
+      // Try to save to DB, but if fails (e.g., no DB connection), still include in results
+      try {
+        const savedDep = await dep.save();
+        results.push(savedDep);
+      } catch (saveErr) {
+        console.warn(`DB save error for ${pkg}:`, saveErr.message);
+        results.push(dep); // Push unsaved dep object
+      }
+    }
+
+    res.status(200).json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error analyzing dependencies" });
+  }
+};
+
+export const getDependencies = async (req, res) => {
+  try {
+    const deps = await Dependency.find();
+    res.status(200).json(deps);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching data" });
+  }
+};
