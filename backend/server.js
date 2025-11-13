@@ -11,7 +11,7 @@ app.use(cors());
 
 app.use("/api/dependencies", dependencyRoutes);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/dependencyAgent";
 
 mongoose.connect(MONGO_URI)

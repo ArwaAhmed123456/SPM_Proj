@@ -1,0 +1,16 @@
+{
+    "axios_^1.5.0": [
+        {
+            "name": "axios",
+            "version": "^1.5.0",
+            "latestVersion": "1.13.2",
+            "vulnerabilities": 4,
+            "healthScore": 55,
+            "riskLevel": "Medium",
+            "_id": "6915f2fcb79e01c7f1dfb05d",
+            "createdAt": "2025-11-13T15:02:20.389Z",
+            "updatedAt": "2025-11-13T15:02:20.389Z",
+            "__v": 0
+        }
+    ]
+}

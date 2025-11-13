@@ -5,10 +5,21 @@ import { calculateHealthScore } from "../utils/healthScore.js";
 // Fetch npm package info and vulnerabilities using OSV API
 export const analyzeDependencies = async (req, res) => {
   try {
-    const { dependencies, fileType } = req.body; // { dependencies: {express: "^4.17.1", ...}, fileType: 'json' or 'txt' }
+    const { dependencies, packageJson } = req.body;
+    let deps = {};
+    if (packageJson && packageJson.dependencies && typeof packageJson.dependencies === 'object' && !Array.isArray(packageJson.dependencies)) {
+      deps = packageJson.dependencies;
+    } else if (dependencies && typeof dependencies === 'object' && !Array.isArray(dependencies)) {
+      deps = dependencies;
+    } else if (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) {
+      deps = req.body;
+    }
+    if (Object.keys(deps).length === 0) {
+      return res.status(200).json([]);
+    }
     const results = [];
 
-    for (const [pkg, version] of Object.entries(dependencies)) {
+    for (const [pkg, version] of Object.entries(deps)) {
       // Get latest version from npm registry
       let latestVersion = "unknown";
       try {

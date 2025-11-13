@@ -4,6 +4,7 @@ import { analyzeDependencies, getDependencies } from "../controllers/dependencyC
 const router = express.Router();
 
 router.post("/analyze", analyzeDependencies);
+router.post("/scan", analyzeDependencies);
 router.get("/", getDependencies);
 
 export default router;
