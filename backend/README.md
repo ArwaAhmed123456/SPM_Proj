@@ -53,8 +53,8 @@ The server will start on the port specified in the `.env` file (default: 5000).
 
 ## API Endpoints
 
-- `GET /api/dependencies` - Retrieve dependencies
-- Other endpoints as defined in the routes
+- `POST /api/dependencies/analyze` - Analyze dependencies for vulnerabilities and health score
+- `GET /api/dependencies` - Retrieve stored dependencies
 
 ## Project Structure
 

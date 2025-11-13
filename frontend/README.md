@@ -63,9 +63,12 @@ frontend/
 ├── public/                 # Static assets
 ├── src/                    # Source code
 │   ├── components/         # React components
+│   │   ├── Dashboard.jsx   # Main dashboard component
+│   │   ├── DependencyTable.jsx # Table for displaying dependencies
+│   │   ├── HealthScoreCard.jsx # Health score display component
+│   │   └── styles/         # Component-specific CSS files
 │   ├── pages/              # Page components
-│   ├── services/           # API service functions
-│   ├── utils/              # Utility functions
+│   ├── styles/             # Global styles
 │   └── index.js            # Application entry point
 ├── package.json            # Dependencies and scripts
 ├── .gitignore              # Git ignore rules

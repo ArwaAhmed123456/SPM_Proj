@@ -11,7 +11,7 @@ This project consists of two main components:
 ## Architecture
 
 ```
-SPM_Project/
+SPM_Proj/
 ├── backend/          # Node.js/Express API server
 │   ├── controllers/  # Request handlers
 │   ├── models/       # MongoDB models
@@ -123,17 +123,20 @@ The backend will run on `http://localhost:5000` and the frontend on `http://loca
 
 The backend provides RESTful API endpoints for dependency management:
 
-- `GET /api/dependencies` - Retrieve dependencies
-- Other endpoints as defined in the routes
+- `POST /api/dependencies/analyze` - Analyze dependencies for vulnerabilities and health score
+- `GET /api/dependencies` - Retrieve stored dependencies
 
 ## Features
 
 - Dependency management system
-- Health scoring for dependencies
+- Health scoring for dependencies based on vulnerabilities and outdated versions
 - RESTful API architecture
 - MongoDB data persistence
 - CORS enabled for frontend communication
 - Environment-based configuration
+- Support for both package.json and requirements.txt files
+- CSV export functionality for dependency reports
+- Real-time analysis using NPM registry and OSV vulnerability database
 
 ## Development
 
