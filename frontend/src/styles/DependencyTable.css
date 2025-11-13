@@ -1,0 +1,42 @@
+.dependency-table-container {
+  margin-top: 1.5rem;
+  width: 75%;
+}
+
+.dependency-table {
+  min-width: 100%;
+  background-color: #1f2937;
+  border-radius: 0.5rem;
+}
+
+.table-header {
+  background-color: #1e40af;
+  text-align: left;
+}
+
+.table-header th {
+  padding: 0.75rem;
+}
+
+.table-body tr {
+  border-bottom: 1px solid #374151;
+}
+
+.table-body td {
+  padding: 0.75rem;
+}
+
+.risk-low {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.risk-medium {
+  color: #facc15;
+  font-weight: 600;
+}
+
+.risk-high {
+  color: #f87171;
+  font-weight: 600;
+}
