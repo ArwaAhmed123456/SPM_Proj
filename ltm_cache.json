@@ -1,0 +1,30 @@
+{
+    "axios_^1.5.0": [
+        {
+            "name": "axios",
+            "version": "^1.5.0",
+            "latestVersion": "1.13.2",
+            "vulnerabilities": 4,
+            "healthScore": 55,
+            "riskLevel": "Medium",
+            "_id": "6915f32eb79e01c7f1dfb05f",
+            "createdAt": "2025-11-13T15:03:10.064Z",
+            "updatedAt": "2025-11-13T15:03:10.064Z",
+            "__v": 0
+        }
+    ],
+    "react_^18.0.0": [
+        {
+            "name": "react",
+            "version": "^18.0.0",
+            "latestVersion": "19.2.0",
+            "vulnerabilities": 0,
+            "healthScore": 95,
+            "riskLevel": "Low",
+            "_id": "6915f669b79e01c7f1dfb061",
+            "createdAt": "2025-11-13T15:16:57.338Z",
+            "updatedAt": "2025-11-13T15:16:57.338Z",
+            "__v": 0
+        }
+    ]
+}
