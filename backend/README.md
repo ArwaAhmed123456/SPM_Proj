@@ -70,6 +70,33 @@ backend/
 └── .gitignore            # Git ignore rules
 ```
 
+## Health Score & Risk Level System
+
+### Overview
+Dependencies are scored and classified to help identify vulnerable or outdated packages.
+
+### Health Score Calculation
+- **Starting score**: 100 points
+- **Vulnerability penalty**: 12 points per vulnerability
+- **Outdated penalty**: 8 points if package is outdated
+- **Minimum score**: 0
+
+**Formula**: `healthScore = max(0, 100 - (vulnerabilities × 12) - (outdated ? 8 : 0))`
+
+### Risk Level Classification
+The system maps health scores to risk levels:
+
+| Health Score | Risk Level | Action |
+|--------------|-----------|--------|
+| ≥ 80         | Low       | Safe to use; monitor for updates |
+| 50–79        | Medium    | Review vulnerabilities; plan update |
+| < 50         | High      | Update immediately |
+
+### Scoring Examples
+1. **Recent, no vulnerabilities**: 100 → **Low Risk**
+2. **2 vulns + outdated**: 100 - 24 - 8 = 68 → **Medium Risk**
+3. **4 vulns + outdated**: 100 - 48 - 8 = 44 → **High Risk**
+
 ## Contributing
 
 1. Fork the repository
