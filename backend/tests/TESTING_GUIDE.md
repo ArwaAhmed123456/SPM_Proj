@@ -1,6 +1,6 @@
-# Dependency Health Agent - Test Documentation
+# Dependency Health Agent - E2E Test Documentation
 
-Complete guide for test suite using Jest and mocked external services.
+Complete guide for end-to-end test suite using Jest with real external API calls.
 
 ---
 
@@ -24,18 +24,23 @@ healthScore = max(0, 100 - (vulnerabilities × 12) - (outdated ? 8 : 0))
 
 ---
 
+## 📋 Overview
+
 - **Jest** - Testing framework with modern syntax
 - **Supertest** - HTTP assertion library for testing Express routes
-- **Nock** - HTTP mocking for external API calls
-- **Mock implementations** - For database operations
+- **Real External APIs** - Tests make actual calls to:
+  - NPM Registry (for latest package versions)
+  - OSV API (for known vulnerabilities)
+
+⚠️ **WARNING**: These tests make real API calls and may be slower. Ensure internet connectivity.
 
 ---
 
-## 📁 Test Files
+## 📁 Test File
 
-### 1. **healthscore.test.js** - Unit Tests for Health Score Calculation
+### riskLevel.e2e.test.js - End-to-End Tests with Real APIs
 
-Tests the core health score calculation logic in isolation.
+Tests the complete dependency analysis flow using actual external API calls.
 
 #### Test Cases
 
@@ -64,26 +69,18 @@ describe('risk level derivation', () => {
 | Medium risk | healthScore 65 | 'Medium' | 50≤Score<80 = Medium risk |
 | High risk | healthScore 30 | 'High' | Score <50 = High risk |
 
-#### Run Unit Tests
+#### Run E2E Tests
 
 ```bash
-npm test -- healthscore.test.js
+npm test
 ```
 
-**Expected Output:**
-```
-PASS  healthscore.test.js
-  calculateHealthScore
-    ✓ no vulnerabilities and up-to-date returns 100
-    ✓ vulnerabilities reduce score correctly
-    ✓ score never goes below 0
-  risk level derivation
-    ✓ low risk for high score
-    ✓ medium risk for mid score
-    ✓ high risk for low score
+**Run specific E2E test:**
 
-Test Suites: 1 passed, 1 total
-Tests:       6 passed, 6 total
+```bash
+npm test -- -t "HIGH RISK"
+npm test -- -t "MIXED RISK"
+npm test -- -t "CVE DETECTION"
 ```
 
 ---
@@ -244,17 +241,19 @@ jest.spyOn(Dependency, 'find')
 
 ## 🚀 Running Tests
 
-### Run All Tests
+### Run All E2E Tests
 
 ```bash
 npm test
 ```
 
-### Run Specific Test File
+### Run Specific E2E Test
 
 ```bash
-npm test healthscore.test.js
-npm test dependencyRoutes.test.js
+npm test -- -t "HIGH RISK"
+npm test -- -t "MIXED RISK"
+npm test -- -t "CVE DETECTION"
+npm test -- -t "BOUNDARY TEST"
 ```
 
 ### Run with Coverage
@@ -263,44 +262,20 @@ npm test dependencyRoutes.test.js
 npm test -- --coverage
 ```
 
-**Expected Output:**
-```
-File              | % Stmts | % Branch | % Funcs | % Lines |
-------------------|---------|----------|---------|---------|
-All files         |   90.5  |   87.3   |   92.1  |   89.8  |
- dependencyCntrl  |   85.2  |   80.0   |   88.9  |   84.5  |
- healthScore.js   |   100   |   100    |   100   |   100   |
-```
-
-### Run in Watch Mode
-
-```bash
-npm test -- --watch
-```
-
-Reruns tests automatically when files change.
-
 ---
 
 ## 🎯 Test Coverage Summary
 
-### Unit Tests (healthscore.test.js)
-- ✅ 6 tests covering health score calculation
-- ✅ Perfect health scenario (no vulns)
-- ✅ Multiple vulnerabilities scenario
-- ✅ Score floor limit (never below 0)
-- ✅ All 3 risk levels (Low/Medium/High)
-
-### Integration Tests (dependencyRoutes.test.js)
-- ✅ 4 route tests covering main scenarios
-- ✅ Low health detection (no vulnerabilities)
-- ✅ Medium health detection (3 vulnerabilities)
-- ✅ High health detection (6 vulnerabilities)
-- ✅ GET endpoint with database mock
-
-### Total Coverage
-- ✅ 10 test cases
-- ✅ All health score ranges covered
-- ✅ All risk levels tested
-- ✅ API mocking validated
-- ✅ Database mocking validated
+### End-to-End Tests (riskLevel.e2e.test.js)
+- ✅ 10+ test cases covering all scenarios
+- ✅ Low risk detection (recent packages, no vulnerabilities)
+- ✅ Medium risk detection (some vulnerabilities, outdated)
+- ✅ High risk detection (multiple vulnerabilities)
+- ✅ Critical risk detection (many vulnerabilities)
+- ✅ Mixed risk distribution (multiple packages)
+- ✅ Outdated detection (version mismatch from latest)
+- ✅ Boundary testing (thresholds)
+- ✅ Scoped packages (@babel/core, etc.)
+- ✅ Performance validation (<10s response time)
+- ✅ Edge cases (empty dependencies)
+- ✅ CVE detection (real-world vulnerabilities)
