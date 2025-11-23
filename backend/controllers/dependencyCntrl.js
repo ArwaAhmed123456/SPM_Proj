@@ -23,26 +23,36 @@ export const analyzeDependencies = async (req, res) => {
       // Get latest version from npm registry
       let latestVersion = "unknown";
       try {
-        const npmData = await axios.get(`https://registry.npmjs.org/${pkg}`);
+        const npmData = await axios.get("https://registry.npmjs.org/" + pkg);
         latestVersion = npmData.data["dist-tags"]?.latest || "unknown";
       } catch (npmErr) {
-        console.warn(`NPM registry error for ${pkg}:`, npmErr.message);
+        console.warn("NPM registry error for " + pkg + ":", npmErr.message);
         // latestVersion remains "unknown"
       }
 
       // Fetch vulnerabilities from OSV API
       let vulnerabilities = 0;
       try {
+        // Sanitize version string for OSV - keep digits and dots only, but ensure no empty string
+        let sanitizedVersion = version.replace(/[^\d.]/g, '');
+        if (!sanitizedVersion || sanitizedVersion.trim() === '') {
+          console.warn("Sanitized version is empty for package " + pkg + ", original version: \"" + version + "\"");
+          sanitizedVersion = version; // fallback to original version, may or may not work
+        }
         const osvResponse = await axios.post('https://api.osv.dev/v1/query', {
           package: { name: pkg, ecosystem: 'npm' },
-          version: version.replace(/[^\d.]/g, '') // Clean version for OSV
+          version: sanitizedVersion
         });
-        if (osvResponse.data && osvResponse.data.vulns && Array.isArray(osvResponse.data.vulns)) {
+        console.log("OSV API response for " + pkg + "@" + sanitizedVersion + ":", osvResponse.data);
+        if (osvResponse.data && Array.isArray(osvResponse.data.vulns)) {
           vulnerabilities = osvResponse.data.vulns.length;
+        } else {
+          console.warn("OSV API response for " + pkg + " missing or invalid 'vulns' array.");
+          vulnerabilities = 0;
         }
       } catch (osvErr) {
-        console.warn(`OSV API error for ${pkg}:`, osvErr.message);
-        // vulnerabilities remains 0
+        console.warn("OSV API error for " + pkg + ":", osvErr.message);
+        vulnerabilities = 0; // ensure default numeric value
       }
 
       const outdated = version.replace(/[^\d.]/g, '') !== latestVersion;
@@ -61,11 +71,25 @@ export const analyzeDependencies = async (req, res) => {
 
       // Try to save to DB, but if fails (e.g., no DB connection), still include in results
       try {
-        const savedDep = await dep.save();
-        results.push(savedDep);
+        await dep.save();
+        results.push({
+          name: pkg,
+          version: version,
+          latestVersion: latestVersion,
+          vulnerabilities: vulnerabilities,
+          healthScore: healthScore,
+          riskLevel: riskLevel,
+        });
       } catch (saveErr) {
-        console.warn(`DB save error for ${pkg}:`, saveErr.message);
-        results.push(dep); // Push unsaved dep object
+        console.warn("DB save error for " + pkg + ":", saveErr.message);
+        results.push({
+          name: pkg,
+          version: version,
+          latestVersion: latestVersion,
+          vulnerabilities: vulnerabilities,
+          healthScore: healthScore,
+          riskLevel: riskLevel,
+        }); // Push unsaved dep as plain object with expected fields
       }
     }
 

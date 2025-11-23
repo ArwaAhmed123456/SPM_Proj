@@ -44,7 +44,7 @@ function App() {
 
   const analyze = async () => {
     try {
-      const res = await axios.post("http://localhost:5000/api/dependencies/analyze", { dependencies, fileType });
+      const res = await axios.post("http://localhost:4000/api/dependencies/analyze", { dependencies, fileType });
       setResults(res.data);
     } catch (error) {
       console.error("Error analyzing dependencies:", error);
@@ -80,8 +80,6 @@ function App() {
       {uploadMode === 'project' ? (
         <input
           type="file"
-          webkitdirectory=""
-          directory=""
           multiple
           onChange={handleFileUpload}
           className="file-input"
