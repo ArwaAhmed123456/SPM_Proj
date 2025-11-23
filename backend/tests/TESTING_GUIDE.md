@@ -4,7 +4,25 @@ Complete guide for test suite using Jest and mocked external services.
 
 ---
 
-## 📋 Overview
+## 🏥 Health Score Calculation Details
+
+### Penalty System (Updated)
+The health score system uses the following penalty structure:
+
+- **Per-vulnerability penalty**: 12 points per known CVE or security issue
+- **Outdated penalty**: 8 points if the installed version differs from the latest available version
+
+**Calculation Formula**:
+```
+healthScore = max(0, 100 - (vulnerabilities × 12) - (outdated ? 8 : 0))
+```
+
+### Risk Level Thresholds
+- **Low Risk**: healthScore ≥ 80
+- **Medium Risk**: 50 ≤ healthScore < 80
+- **High Risk**: healthScore < 50
+
+---
 
 - **Jest** - Testing framework with modern syntax
 - **Supertest** - HTTP assertion library for testing Express routes
@@ -40,7 +58,7 @@ describe('risk level derivation', () => {
 | Test | Input | Expected Output | Purpose |
 |------|-------|-----------------|---------|
 | Perfect health | 0 vulns, not outdated | 100 | Validates max score |
-| Multiple vulns | 2 vulns, outdated | 75 | Checks calculation: 100 - (2×10) - 5 = 75 |
+| Multiple vulns | 2 vulns, outdated | 68 | Checks calculation: 100 - (2×12) - 8 = 68 |
 | Floor limit | 100 vulns, outdated | ≥0 | Ensures score never negative |
 | Low risk | healthScore 90 | 'Low' | Score ≥80 = Low risk |
 | Medium risk | healthScore 65 | 'Medium' | 50≤Score<80 = Medium risk |
@@ -126,9 +144,9 @@ test('POST /analyze returns Medium risk when multiple vulns', async () => {});
 
 **Calculation:**
 - Base score: 100
-- Vulnerabilities: 3 × 10 = -30
+- Vulnerabilities: 3 × 12 = -36
 - Outdated: 0 (version matches latest)
-- **Final score: 70 → Medium risk** (50-79 range)
+- **Final score: 64 → Medium risk** (50-79 range)
 
 **Expected Result:**
 ```json
@@ -150,7 +168,7 @@ test('POST /analyze returns High risk when many vulns', async () => {});
 
 **Calculation:**
 - Base score: 100
-- Vulnerabilities: 6 × 10 = -60
+- Vulnerabilities: 5 × 12 = -60
 - Outdated: 0
 - **Final score: 40 → High risk** (<50 range)
 
