@@ -51,6 +51,19 @@ npm start
 
 The server will start on the port specified in the `.env` file (default: 5000).
 
+## Testing
+
+### E2E Tests
+```
+npm test
+```
+
+Runs end-to-end tests using Jest that make real API calls to:
+- **NPM Registry** - to fetch latest package versions
+- **OSV API** - to detect known vulnerabilities
+
+⚠️ **Warning**: E2E tests are slower due to external API calls and require internet connectivity.
+
 ## API Endpoints
 
 - `POST /api/dependencies/analyze` - Analyze dependencies for vulnerabilities and health score
@@ -69,6 +82,33 @@ backend/
 ├── .env                  # Environment variables (not committed)
 └── .gitignore            # Git ignore rules
 ```
+
+## Health Score & Risk Level System
+
+### Overview
+Dependencies are scored and classified to help identify vulnerable or outdated packages.
+
+### Health Score Calculation
+- **Starting score**: 100 points
+- **Vulnerability penalty**: 12 points per vulnerability
+- **Outdated penalty**: 8 points if package is outdated
+- **Minimum score**: 0
+
+**Formula**: `healthScore = max(0, 100 - (vulnerabilities × 12) - (outdated ? 8 : 0))`
+
+### Risk Level Classification
+The system maps health scores to risk levels:
+
+| Health Score | Risk Level | Action |
+|--------------|-----------|--------|
+| ≥ 80         | Low       | Safe to use; monitor for updates |
+| 50–79        | Medium    | Review vulnerabilities; plan update |
+| < 50         | High      | Update immediately |
+
+### Scoring Examples
+1. **Recent, no vulnerabilities**: 100 → **Low Risk**
+2. **2 vulns + outdated**: 100 - 24 - 8 = 68 → **Medium Risk**
+3. **4 vulns + outdated**: 100 - 48 - 8 = 44 → **High Risk**
 
 ## Contributing
 

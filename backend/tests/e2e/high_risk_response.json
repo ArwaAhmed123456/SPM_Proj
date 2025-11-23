@@ -1,0 +1,40 @@
+[
+  {
+    "$__": {
+      "activePaths": {
+        "paths": {
+          "_id": "default",
+          "name": "modify",
+          "version": "modify",
+          "latestVersion": "modify",
+          "vulnerabilities": "modify",
+          "healthScore": "modify",
+          "riskLevel": "modify"
+        },
+        "states": {
+          "default": {
+            "_id": true
+          },
+          "modify": {
+            "name": true,
+            "version": true,
+            "latestVersion": true,
+            "vulnerabilities": true,
+            "healthScore": true,
+            "riskLevel": true
+          }
+        }
+      }
+    },
+    "_doc": {
+      "name": "express",
+      "version": "0.0.9",
+      "latestVersion": "5.1.0",
+      "vulnerabilities": 4,
+      "healthScore": 44,
+      "riskLevel": "High",
+      "_id": "692322313d547d6c31e358aa"
+    },
+    "_id": "mock-id-1763910193425"
+  }
+]
