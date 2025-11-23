@@ -51,6 +51,19 @@ npm start
 
 The server will start on the port specified in the `.env` file (default: 5000).
 
+## Testing
+
+### E2E Tests
+```
+npm test
+```
+
+Runs end-to-end tests using Jest that make real API calls to:
+- **NPM Registry** - to fetch latest package versions
+- **OSV API** - to detect known vulnerabilities
+
+⚠️ **Warning**: E2E tests are slower due to external API calls and require internet connectivity.
+
 ## API Endpoints
 
 - `POST /api/dependencies/analyze` - Analyze dependencies for vulnerabilities and health score

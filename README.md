@@ -169,11 +169,13 @@ The system calculates a health score (0–100) for each dependency and assigns a
 
 ## Testing
 
-### Backend Testing
+### Backend E2E Testing
 ```
 cd backend
 npm test
 ```
+
+The backend uses end-to-end tests that make real API calls to NPM Registry and OSV vulnerability database to test actual vulnerability detection and risk level assignment.
 
 ### Frontend Testing
 ```
