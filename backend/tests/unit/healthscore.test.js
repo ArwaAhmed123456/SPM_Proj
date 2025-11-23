@@ -6,8 +6,8 @@ describe('calculateHealthScore', () => {
   });
 
   test('vulnerabilities reduce score correctly', () => {
-    // vulnerabilities * 10 subtracted, outdated subtracts 5 in utils
-    expect(calculateHealthScore(2, true)).toBe(75); // 100 - 20 - 5
+    // vulnerabilities * 12 subtracted, outdated subtracts 8 in utils
+    expect(calculateHealthScore(2, true)).toBe(68); // 100 - 24 - 8
   });
 
   test('score never goes below 0', () => {
