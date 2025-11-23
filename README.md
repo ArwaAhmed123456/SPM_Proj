@@ -138,6 +138,23 @@ The backend provides RESTful API endpoints for dependency management:
 - CSV export functionality for dependency reports
 - Real-time analysis using NPM registry and OSV vulnerability database
 
+## Health Score & Risk Level System
+
+The system calculates a health score (0–100) for each dependency and assigns a risk level:
+
+### Health Score Calculation
+- **Base score**: 100
+- **Per-vulnerability penalty**: 12 points
+- **Outdated package penalty**: 8 points
+- **Minimum score**: 0
+
+**Formula**: `healthScore = max(0, 100 - (vulnerabilities × 12) - (outdated ? 8 : 0))`
+
+### Risk Level Mapping
+- **Low Risk**: healthScore ≥ 80 (safe to use)
+- **Medium Risk**: 50 ≤ healthScore < 80 (review and consider updating)
+- **High Risk**: healthScore < 50 (update immediately)
+
 ## Development
 
 ### Backend Development
