@@ -7,31 +7,47 @@ import {
   validateHandshakeMessage,
   processTaskAssignment,
 } from "./services/taskProcessor.js";
+import morgan from "morgan";
 
 dotenv.config();
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use(cors());
+
+// Add HTTP request logger middleware to aid debugging
+app.use(morgan("dev"));
 
 app.use("/api/dependencies", dependencyRoutes);
 
-// Existing /execute route for dependency analysis (package.json, requirements.txt)
+// Base64 decode utility function with improved error handling
+const decodeBase64 = (base64Str) => {
+  try {
+    return Buffer.from(base64Str, "base64");
+  } catch (err) {
+    throw new Error("Invalid base64 string");
+  }
+};
+
+// Updated /execute-dependency route for dependency analysis (package.json, requirements.txt)
 app.post("/execute-dependency", async (req, res) => {
   try {
     const message = req.body;
 
-    // Basic validation for required fields
+    // Strict validation for required fields
     if (
+      !message ||
+      typeof message !== "object" ||
       !message.message_id ||
       !message.sender ||
       !message.recipient ||
       !message.type ||
-      !message.task
+      !message.task ||
+      typeof message.task !== "object"
     ) {
       return res.status(400).json({
         status: "failed",
-        result: { error: "Invalid message format: missing required fields" },
+        result: { error: "Invalid message format: missing required fields or task" },
       });
     }
 
@@ -44,47 +60,58 @@ app.post("/execute-dependency", async (req, res) => {
 
     const { file_content_base64, file_type, project_name } = message.task;
 
-    if (!file_content_base64 || !file_type) {
+    if (
+      !file_content_base64 ||
+      typeof file_content_base64 !== "string" ||
+      !file_type ||
+      typeof file_type !== "string"
+    ) {
       return res.status(400).json({
         status: "failed",
-        result: { error: "Invalid task format: missing file content or file type" },
-      });
-    }
-
-    // Decode base64 content
-    let fileContentStr;
-    try {
-      fileContentStr = Buffer.from(file_content_base64, "base64").toString("utf-8");
-    } catch (e) {
-      return res.status(400).json({
-        status: "failed",
-        result: { error: "Invalid base64 in file content" },
+        result: { error: "Invalid task format: missing or incorrect file content or file type" },
       });
     }
 
     let dependencies = {};
 
     if (file_type === "package.json") {
-      // Parse JSON content
-      let pkgJson;
+      // Decode base64 content and parse package.json
+      let fileContentStr;
       try {
-        pkgJson = JSON.parse(fileContentStr);
+        fileContentStr = decodeBase64(file_content_base64).toString("utf-8");
+      } catch (e) {
+        return res.status(400).json({
+          status: "failed",
+          result: { error: "Invalid base64 in file content" },
+        });
+      }
+
+      try {
+        const pkgJson = JSON.parse(fileContentStr);
+        dependencies = pkgJson.dependencies || {};
       } catch (e) {
         return res.status(400).json({
           status: "failed",
           result: { error: "Invalid JSON in package.json" },
         });
       }
-
-      dependencies = pkgJson.dependencies || {};
     } else if (file_type === "requirements.txt") {
-      // Parse requirements.txt - each line package==version or package>=version
+      // Decode base64 and parse requirements.txt
+      let fileContentStr;
+      try {
+        fileContentStr = decodeBase64(file_content_base64).toString("utf-8");
+      } catch (e) {
+        return res.status(400).json({
+          status: "failed",
+          result: { error: "Invalid base64 in file content" },
+        });
+      }
+
       dependencies = {};
       const lines = fileContentStr.split(/\r?\n/);
       for (const line of lines) {
         const trimmed = line.trim();
         if (trimmed === "" || trimmed.startsWith("#")) continue;
-        // Regex to parse package and version specifiers (simplified)
         const match = trimmed.match(/^([a-zA-Z0-9_-]+)([=><!~^]+)?(.+)?$/);
         if (match) {
           const pkg = match[1];
@@ -99,8 +126,12 @@ app.post("/execute-dependency", async (req, res) => {
       });
     }
 
-    // Call analyzeDependencies logic from dependencyRoutes
-    // Simulate req and res objects for calling analyzeDependencies
+    // Defensive check: ensure dependencies is an object
+    if (!dependencies || typeof dependencies !== "object") {
+      dependencies = {};
+    }
+
+    // Call analyzeDependencies from dependencyRoutes with proper async/await
     const mockReq = { body: { dependencies } };
     let analysisResult;
     const mockRes = {
@@ -116,13 +147,27 @@ app.post("/execute-dependency", async (req, res) => {
       },
     };
 
-    // Note: analyzeDependencies is an async function exported from dependencyRoute.js
-    await dependencyRoutes.stack
-      .find((layer) => layer.route?.path === "/")
-      .route.stack[0].handle(mockReq, mockRes);
+    try {
+      const analyzeLayer = dependencyRoutes.stack.find(
+        (layer) => layer.route?.path === "/analyze"
+      );
+      if (!analyzeLayer) {
+        return res.status(500).json({
+          status: "failed",
+          result: { error: "Analysis route not found" },
+        });
+      }
+      await analyzeLayer.route.stack[0].handle(mockReq, mockRes);
+    } catch (e) {
+      console.error("Error calling analyzeDependencies route:", e);
+      return res.status(500).json({
+        status: "failed",
+        result: { error: "Internal error during dependency analysis" },
+      });
+    }
 
-    // Calculate total dependencies and overall health score
-    const totalDependencies = analysisResult.length || 0;
+    // Calculate total dependencies and overall health score from analysisResult
+    const totalDependencies = Array.isArray(analysisResult) ? analysisResult.length : 0;
     const overallHealthScore = totalDependencies
       ? Math.round(
           analysisResult.reduce((acc, dep) => acc + (dep.healthScore || 0), 0) /
@@ -180,6 +225,7 @@ app.post("/execute", async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    console.error("Error in /execute route:", error);
     return res.status(500).json({ status: "failed", result: { error: error.message } });
   }
 });
@@ -194,6 +240,6 @@ mongoose
     app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   })
   .catch((err) => {
-    console.log("❌ MongoDB connection failed, starting server without DB");
+    console.error("❌ MongoDB connection failed, starting server without DB", err);
     app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT} (without DB)`));
   });

@@ -1,69 +1,86 @@
-// services/taskProcessor.js
+import dependencyRoutes from '../routes/dependencyRoute.js';
 
-/**
- * Validate the handshake message structure
- * @param {Object} message
- * @returns {Boolean} true if valid, false otherwise
- */
-export function validateHandshakeMessage(message) {
-  const requiredFields = [
-    "message_id",
-    "sender",
-    "recipient",
-    "type",
-    "related_message_id",
-    "status",
-    "results/task",
-    "timestamp",
-  ];
-
-  for (const field of requiredFields) {
-    if (!(field in message)) {
-      return false;
-    }
+const validateHandshakeMessage = (message) => {
+  if (
+    !message ||
+    typeof message !== 'object' ||
+    !message.message_id ||
+    !message.sender ||
+    !message.recipient ||
+    !message.type ||
+    !message['results/task']
+  ) {
+    return false;
   }
-
-  // Optional: further validation on types and allowed values can be added here
-
+  // Additional validation can be added here as needed
   return true;
-}
+};
 
-/**
- * Process a task assignment message and return a response
- * @param {Object} taskAssignment - the task object from message.results/task
- * @returns {Object} result object with processing info and outputs
- */
-export async function processTaskAssignment(taskAssignment) {
-  // Example: process the task depending on input type
+const processTaskAssignment = async (task) => {
+  // This function will simulate processing the task by forwarding dependencies to the analyze route logic
+  // task is expected to have a similar structure as in /execute-dependency route's task input
 
-  if (!taskAssignment) {
-    throw new Error("Missing task assignment object");
+  const { file_content_base64, file_type, project_name } = task || {};
+
+  if (!file_content_base64 || !file_type) {
+    return { status: 'failed', error: 'Missing file_content_base64 or file_type in task' };
   }
 
-  // You can extend this logic for git_repo_url, zip_file_base64, code_files_base64
+  // Decode base64 content and parse dependencies from package.json or requirements.txt
+  let dependencies = {};
 
-  if (taskAssignment.git_repo_url) {
-    // Logic to clone repo, analyze code, generate docs
-    // Placeholder response:
-    return {
-      status: "completed",
-      message: "Processed git repo URL task",
-      repo: taskAssignment.git_repo_url,
-    };
-  } else if (taskAssignment.zip_file_base64) {
-    // Logic to unzip, analyze, etc.
-    return {
-      status: "completed",
-      message: "Processed zip file task",
-    };
-  } else if (taskAssignment.code_files_base64) {
-    // Logic to decode files and analyze
-    return {
-      status: "completed",
-      message: "Processed code files task",
-      filesCount: taskAssignment.code_files_base64.length,
-    };
-  } else {
-    throw new Error("Unknown or missing task input");
+  try {
+    const buffer = Buffer.from(file_content_base64, 'base64');
+    const decodedContent = buffer.toString('utf-8');
+
+    if (file_type === 'package.json') {
+      const pkgJson = JSON.parse(decodedContent);
+      dependencies = pkgJson.dependencies || {};
+    } else if (file_type === 'requirements.txt') {
+      dependencies = {};
+      const lines = decodedContent.split(/\r?\n/);
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed === '' || trimmed.startsWith('#')) continue;
+        const match = trimmed.match(/^([a-zA-Z0-9_-]+)([=><!~^]+)?(.+)?$/);
+        if (match) {
+          const pkg = match[1];
+          const ver = match[3] ? match[3].trim() : '';
+          dependencies[pkg] = ver || 'unknown';
+        }
+      }
+    } else {
+      return { status: 'failed', error: `Unsupported file type: ${file_type}` };
+    }
+  } catch (err) {
+    return { status: 'failed', error: `Error parsing task file content: ${err.message}` };
   }
-}
+
+  // Use the analyzeDependencies logic from dependencyRoutes to analyze the dependencies
+  let analysisResult;
+  const mockReq = { body: { dependencies } };
+  const mockRes = {
+    status: (code) => ({
+      json: (obj) => {
+        analysisResult = obj;
+        return obj;
+      },
+    }),
+    json: (obj) => {
+      analysisResult = obj;
+      return obj;
+    },
+  };
+
+  try {
+    await dependencyRoutes.stack
+      .find((layer) => layer.route?.path === '/analyze')
+      .route.stack[0].handle(mockReq, mockRes);
+
+    return { status: 'completed', result: analysisResult };
+  } catch (err) {
+    return { status: 'failed', error: `Error analyzing dependencies: ${err.message}` };
+  }
+};
+
+export { validateHandshakeMessage, processTaskAssignment };

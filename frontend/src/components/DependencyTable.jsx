@@ -16,8 +16,8 @@ const DependencyTable = ({ results }) => {
           </tr>
         </thead>
         <tbody className="table-body">
-          {results.map((d) => (
-            <tr key={d.name}>
+          {results.map((d, index) => (
+            <tr key={`${d.name}-${index}`}>
               <td>{d.name}</td>
               <td>{d.version}</td>
               <td>{d.latestVersion}</td>

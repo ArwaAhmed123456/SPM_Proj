@@ -1,5 +1,6 @@
 import json
 import requests
+import time
 from Abstract_Class_Worker_Agent import AbstractWorkerAgent
 
 class DependencyHealthWorker(AbstractWorkerAgent):
@@ -12,30 +13,66 @@ class DependencyHealthWorker(AbstractWorkerAgent):
         super().__init__(agent_id, supervisor_id)
         self.backend_url = backend_url
         self.ltm_file = "ltm_cache.json"
+        self.cache_expiry_seconds = 24 * 60 * 60  # 24 hours
+        self.request_timeout = 3  # Reduced from 5 to 3 seconds timeout for faster failure
+        self.retries = 2  # Reduced retries from 3 to 2 for faster failure
 
     # Required abstract methods
     def process_task(self, task_data: dict) -> dict:
         """Receive parameters from Supervisor, forward to Node backend, get scan result."""
+
         dependency = task_data.get("dependency")
         version = task_data.get("version")
-        cache_key = f"{dependency}_{version}"
+        search_patterns = task_data.get("search_patterns", None)
+        cache_key = f"{dependency}_{version}_{str(search_patterns)}"
 
+        # Check cache with expiry validation
         cached = self.read_from_ltm(cache_key)
         if cached:
-            print(f"[{self._id}] Found cached result in LTM.")
-            return cached
+            cache_age = time.time() - cached.get("_cache_timestamp", 0)
+            if cache_age < self.cache_expiry_seconds:
+                print(f"[{self._id}] Found cached result in LTM, age {cache_age:.0f} seconds.")
+                # Remove internal cache timestamp before returning
+                cached.pop("_cache_timestamp", None)
+                return cached
+            else:
+                print(f"[{self._id}] Cache expired for {cache_key}, refreshing.")
 
-        # Send request to Node backend for real analysis
+        # Prepare payload
         payload = {
             "dependencies": {dependency: version}
         }
-        print(f"[{self._id}] Sending scan request to backend...")
-        response = requests.post(self.backend_url, json=payload)
-        data = response.json()
+        if search_patterns:
+            payload["search_patterns"] = search_patterns
 
-        # Store in memory and return
-        self.write_to_ltm(cache_key, data)
-        return data
+        print(f"[{self._id}] Sending scan request to backend with payload: {json.dumps(payload)}")
+
+        # Retry logic simplified to reduce delays
+        last_exception = None
+        for attempt in range(1, self.retries + 2):  # retries + 1 attempts
+            try:
+                response = requests.post(self.backend_url, json=payload, timeout=self.request_timeout)
+                response.raise_for_status()
+                data = response.json()
+                # Cache result with timestamp
+                data["_cache_timestamp"] = time.time()
+                self.write_to_ltm(cache_key, data)
+                # Remove internal marker before returning
+                data.pop("_cache_timestamp", None)
+                return data
+            except requests.exceptions.RequestException as e:
+                last_exception = e
+                print(f"[{self._id}] Request attempt {attempt} failed: {e}")
+                if attempt < self.retries + 1:
+                    time.sleep(0.3 * attempt)  # small exponential backoff
+                else:
+                    print(f"[{self._id}] All retry attempts failed for {dependency}.")
+            except json.JSONDecodeError:
+                print(f"[{self._id}] Invalid JSON response from backend")
+                break
+
+        error_msg = f"Request to backend failed after retries: {str(last_exception)}"
+        return {"status": "error", "message": error_msg}
 
     def validate_message(self, message_obj: dict) -> tuple[bool, str]:
         """Validate the incoming message for required fields and correct format."""  
@@ -53,9 +90,17 @@ class DependencyHealthWorker(AbstractWorkerAgent):
 
         if "name" not in task or "parameters" not in task:
             return False, "Task must include 'name' and 'parameters' fields"
-        
+
         if not isinstance(task["parameters"], dict):
             return False, "'parameters' field must be a dictionary"
+
+        # Additional validations
+        params = task["parameters"]
+        if "dependency" not in params or "version" not in params:
+            return False, "Task parameters must include 'dependency' and 'version'"
+
+        if "search_patterns" in params and not (isinstance(params["search_patterns"], list) or params["search_patterns"] is None):
+            return False, "'search_patterns' must be a list or None"
 
         return True, "Valid message"
 
@@ -130,7 +175,8 @@ if __name__ == "__main__":
             "name": "dependency_health_check",
             "parameters": {
                 "dependency": "axios",
-                "version": "^1.5.0"
+                "version": "^1.5.0",
+                "search_patterns": ["*.js", "*.json"]
             }
         },
         "timestamp": "2025-11-13T12:00:00Z"

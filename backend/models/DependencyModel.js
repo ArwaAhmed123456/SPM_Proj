@@ -1,5 +1,7 @@
+
 import mongoose from "mongoose";
 
+// adding time stamp for long-term memory record
 const dependencySchema = new mongoose.Schema({
   name: String,
   version: String,
@@ -7,6 +9,8 @@ const dependencySchema = new mongoose.Schema({
   vulnerabilities: Number,
   healthScore: Number,
   riskLevel: String,
-}, { timestamps: true });
+}, { timestamps: true });  
 
-export default mongoose.model("Dependency", dependencySchema);
+const Dependency = mongoose.model("Dependency", dependencySchema);
+
+export default Dependency;
