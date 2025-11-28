@@ -4,12 +4,12 @@ import Dashboard from "./components/Dashboard";
 import "./styles/App.css";
 
 function App() {
-  const [dependencies, setDependencies] = useState({});
-  const [uploadedFiles, setUploadedFiles] = useState([]); // holds parsed + base64 data
-  const [results, setResults] = useState([]);
-  const [uploadMode, setUploadMode] = useState("project");
+  const [uploadedFiles, setUploadedFiles] = useState([]); // holds parsed + base64 data with dependencies
+  const [results, setResults] = useState([]); // array of results for each file
+
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
 
   // -------------------------------
   // REGEX-BASED FILE DETECTION
@@ -54,8 +54,29 @@ function App() {
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
 
-    const allDeps = {};
+    // Validate file types before processing
+    const invalidFiles = files.filter(file => {
+      const lower = file.name.toLowerCase();
+      return !isPackageJsonFile(lower) && !isRequirementsFile(lower);
+    });
+
+    if (invalidFiles.length > 0) {
+      setErrorMessage("You can only upload package.json or requirements.txt files.");
+      setUploadedFiles([]);
+      return;
+    }
+
+    await processFiles(files);
+  };
+
+
+
+  // -------------------------------
+  // COMMON FILE PROCESSING
+  // -------------------------------
+  const processFiles = async (files) => {
     const fileRecords = [];
+    let hasInvalidFiles = false;
 
     for (const file of files) {
       try {
@@ -64,6 +85,7 @@ function App() {
         const lower = file.name.toLowerCase();
 
         let detectedType = null;
+        let dependencies = {};
 
         // 1. Filename matching
         if (isPackageJsonFile(lower)) detectedType = "package-json";
@@ -75,8 +97,8 @@ function App() {
         // -------- Process Files --------
         if (detectedType === "package-json") {
           const pkg = JSON.parse(text);
-          Object.assign(allDeps, pkg.dependencies || {});
-          fileRecords.push({ type: "package-json", base64Content, content: pkg });
+          dependencies = pkg.dependencies || {};
+          fileRecords.push({ name: file.name, type: "package-json", base64Content, content: pkg, dependencies });
         }
 
         else if (detectedType === "requirements") {
@@ -84,21 +106,31 @@ function App() {
             const trimmed = line.trim();
             if (trimmed && !trimmed.startsWith("#")) {
               const match = trimmed.match(/^([a-zA-Z0-9\-_]+)([>=<~!]+.+)?$/);
-              if (match) allDeps[match[1]] = match[2] || "latest";
+              if (match) dependencies[match[1]] = match[2] || "latest";
             }
           });
-          fileRecords.push({ type: "requirements", base64Content, content: text });
+          fileRecords.push({ name: file.name, type: "requirements", base64Content, content: text, dependencies });
+        } else {
+          hasInvalidFiles = true;
         }
 
       } catch (err) {
         console.error("Error processing file:", file.name, err);
+        hasInvalidFiles = true;
       }
     }
 
-    setDependencies(allDeps);
-    setUploadedFiles(fileRecords);
+    if (hasInvalidFiles && fileRecords.length === 0) {
+      setErrorMessage("You can only upload package.json or requirements.txt files.");
+      setUploadedFiles([]);
+    } else if (hasInvalidFiles) {
+      setErrorMessage("Some files were invalid. Only package.json and requirements.txt files are supported.");
+      setUploadedFiles(fileRecords);
+    } else {
+      setErrorMessage("");
+      setUploadedFiles(fileRecords);
+    }
 
-    console.log("Dependencies Set:", allDeps);
     console.log("Uploaded Files:", fileRecords);
   };
 
@@ -111,27 +143,36 @@ function App() {
     setLoading(true);
 
     try {
-      let finalResults = [];
+      const allResults = [];
 
-      const payload = {
-        dependencies,
-        files: uploadedFiles, // send all parsed files
-      };
+      for (const file of uploadedFiles) {
+        if (Object.keys(file.dependencies).length === 0) continue;
 
-      const res = await axios.post(
-        "http://localhost:4000/api/dependencies/analyze",
-        payload
-      );
+        const payload = {
+          dependencies: file.dependencies,
+          files: [file], // send one file at a time
+        };
 
-      if (res.data?.dependencies) {
-        finalResults = res.data.dependencies;
+        const res = await axios.post(
+          "http://localhost:4000/api/dependencies/analyze",
+          payload
+        );
+
+        if (res.data?.dependencies) {
+          allResults.push({
+            fileName: file.name,
+            dependencies: res.data.dependencies,
+            overallHealthScore: res.data.overallHealthScore,
+            analysisDurationMs: res.data.analysisDurationMs,
+          });
+        }
       }
 
-      if (finalResults.length === 0) {
+      if (allResults.length === 0) {
         setErrorMessage("No dependency data returned from analysis.");
       }
 
-      setResults(finalResults);
+      setResults(allResults);
     } catch (err) {
       console.error("Error analyzing dependencies:", err);
       setErrorMessage("Error analyzing dependencies. Check console.");
@@ -144,68 +185,91 @@ function App() {
   // UI
   // -------------------------------
   return (
-    <div className="app-container">
-      <h1 className="app-title">Dependency Health Agent</h1>
+    <div className="App">
+      <header className="app-header">
+        <div className="header-content">
+          <div>
+            <h1 className="app-title">
+              Dependency Health Agent
+            </h1>
+            <p className="app-subtitle">Analyze and monitor your project dependencies</p>
+          </div>
+          <div className="header-logo">
+            <img src="/HDA_logo.png" alt="HDA Logo" className="app-title-icon" />
+          </div>
+        </div>
+      </header>
 
-      {/* Upload Mode */}
-      <div className="upload-mode-selector">
-        <label>
-          <input
-            type="radio"
-            value="project"
-            checked={uploadMode === "project"}
-            onChange={(e) => setUploadMode(e.target.value)}
-          />
-          Upload Project Directory
-        </label>
+      <main className="app-container">
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">
+              Upload Dependencies
+            </h2>
+          </div>
+          <div className="card-body">
+            <div className="form-group">
+              <label className="form-label">
+                Select package.json or requirements.txt files:
+              </label>
+              <br />
+              <input
+                type="file"
+                accept=".json,.txt"
+                onChange={handleFileUpload}
+                className="form-input"
+                multiple
+              />
+            </div>
 
-        <label>
-          <input
-            type="radio"
-            value="file"
-            checked={uploadMode === "file"}
-            onChange={(e) => setUploadMode(e.target.value)}
-          />
-          Upload Individual File
-        </label>
-      </div>
 
-      {/* File Input */}
-      {uploadMode === "project" ? (
-        <input type="file" multiple onChange={handleFileUpload} />
-      ) : (
-        <input
-          type="file"
-          accept=".json,.txt"
-          onChange={handleFileUpload}
-        />
-      )}
 
-      {/* Analyze Button */}
-      <button
-        onClick={analyze}
-        className="analyze-button"
-        disabled={
-          Object.keys(dependencies).length === 0 &&
-          uploadedFiles.length === 0
-        }
-      >
-        Analyze Dependencies
-      </button>
+            <div className="flex gap-md" style={{ marginTop: 'var(--spacing-lg)' }}>
+              <button
+                onClick={analyze}
+                className="btn btn-primary"
+                disabled={uploadedFiles.length === 0 || uploadedFiles.every(file => Object.keys(file.dependencies).length === 0)}
+              >
+                Analyze Dependencies
+              </button>
+            </div>
+          </div>
+        </div>
 
-      {/* Error */}
-      {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
+        {/* Error Alert */}
+        {errorMessage && (
+          <div className="alert alert-danger">
+            <span>⚠️</span>
+            <div>
+              <strong>Error:</strong> {errorMessage}
+            </div>
+          </div>
+        )}
 
-      {/* Loading */}
-      {loading && <p>Analyzing... please wait</p>}
+        {/* Loading State */}
+        {loading && (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p className="loading-text">Analyzing dependencies... please wait</p>
+          </div>
+        )}
 
-      {/* Dashboard */}
-      {results.length > 0 ? (
-        <Dashboard results={results} />
-      ) : (
-        !errorMessage &&
-        !loading && <p>No data to display. Please upload files and analyze.</p>
-      )}
+        {/* Dashboard */}
+        {results.length > 0 ? (
+          <Dashboard results={results} onRefreshAnalysis={analyze} />
+        ) : (
+          !errorMessage &&
+          !loading && (
+            <div className="card">
+              <div className="card-body text-center">
+                <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
+                  No data to display. Please upload dependency files and click "Analyze Dependencies".
+                </p>
+              </div>
+            </div>
+          )
+        )}
+      </main>
     </div>
   );
 }

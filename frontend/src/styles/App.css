@@ -1,46 +1,373 @@
-.app-container {
+:root {
+  /* Primary Colors */
+  --primary-color: #4cbfc5;
+  --primary-hover: #43b0b6;
+  --primary-light: #8adadd;
+  --primary-dark: #23868b;
+  --primary-bg: rgba(76, 191, 197, 0.12);
+
+  /* Status Colors */
+  --success-color: #10b981;
+  --success-light: #ecfdf5;
+  --success-dark: #059669;
+
+  --warning-color: #f59e0b;
+  --warning-light: #fffbeb;
+  --warning-dark: #d97706;
+
+  --danger-color: #ef4444;
+  --danger-light: #fef2f2;
+  --danger-dark: #dc2626;
+
+  --info-color: #3b82f6;
+  --info-light: #eff6ff;
+
+  /* Backgrounds */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-gradient: linear-gradient(135deg, #ffffff, #eef2f7);
+
+  /* Text */
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --text-tertiary: #94a3b8;
+
+  /* Neutrals */
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #0f172a;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-md: 0 6px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 12px 24px rgba(0,0,0,0.12);
+  --shadow-xl: 0 20px 40px rgba(0,0,0,0.15);
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 999px;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'SF Mono', Consolas, monospace;
+
+  /* Transitions */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms cubic-bezier(.4,0,.2,1);
+  --transition-slow: 300ms cubic-bezier(.4,0,.2,1);
+}
+
+/* ============================================
+   RESET & BASE STYLES
+   ============================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--bg-gradient);
+  line-height: 1.7;
   min-height: 100vh;
-  background-color: #111827;
-  color: white;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================
+   APP CONTAINER
+   ============================================ */
+.App {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+.app-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+/* ============================================
+   HEADER (Updated for Professional Look)
+   ============================================ */
+.app-header {
+  background: linear-gradient(135deg, #3fbec4, #1f8c91);
+  color: white;
+  padding: 12px 28px; /* reduced to remove large gap */
+  box-shadow: var(--shadow-xl);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.header-content {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
 }
 
 .app-title {
-  font-size: 1.875rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
-  color: #60a5fa;
-}
-
-.upload-mode-selector {
-  margin-bottom: 1rem;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   display: flex;
-  gap: 1rem;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-top: 0 !important; /* removes unwanted extra space */
 }
 
-.upload-mode-selector label {
+.app-title-icon {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+}
+
+.app-subtitle {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  margin-top: -4px; /* visually tighter */
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn {
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--success-color), var(--success-dark));
+  color: white;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--danger-color), var(--danger-dark));
+  color: white;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+}
+
+.btn-outline:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   CARDS
+   ============================================ */
+.card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
+  transition: var(--transition-base);
+  border: 1px solid var(--gray-200);
+  backdrop-filter: blur(12px);
+}
+
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-xl);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.card-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* ============================================
+   BADGES
+   ============================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: background var(--transition-fast);
+}
+
+.badge-low-risk { background: var(--success-light); color: var(--success-dark); }
+.badge-medium-risk { background: var(--warning-light); color: var(--warning-dark); }
+.badge-high-risk { background: var(--danger-light); color: var(--danger-dark); }
+.badge-info { background: var(--info-light); color: var(--info-color); }
+
+/* ============================================
+   LOADING SPINNER
+   ============================================ */
+.loading-spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid var(--gray-200);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl);
+  gap: var(--spacing-md);
+}
+
+.loading-text {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* ============================================
+   ALERTS
+   ============================================ */
+.alert {
+  padding: 16px 24px;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-lg);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
+  gap: var(--spacing-md);
+  box-shadow: var(--shadow-md);
+  font-weight: 600;
 }
 
-.file-input {
-  margin-bottom: 1rem;
+.alert-success { background: var(--success-light); color: var(--success-dark); }
+.alert-warning { background: var(--warning-light); color: var(--warning-dark); }
+.alert-danger { background: var(--danger-light); color: var(--danger-dark); }
+.alert-info { background: var(--info-light); color: var(--info-color); }
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.analyze-button {
-  background-color: #3b82f6;
-  padding: 0.5rem 1.5rem;
-  border-radius: 0.5rem;
-  color: white;
-  border: none;
-  cursor: pointer;
+.fade-in { animation: fadeIn 0.4s ease-out; }
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.flex { display: flex; }
+.flex-column { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.w-full { width: 100%; }
+
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-lg { margin-top: var(--spacing-lg); }
+
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 768px) {
+  .app-container { padding: var(--spacing-md); }
+  .app-title { font-size: 1.6rem; }
+  .card { padding: var(--spacing-md); }
+  .app-title-icon { width: 55px; height: 55px; }
 }
 
-.analyze-button:hover {
-  background-color: #2563eb;
+@media (max-width: 480px) {
+  .btn { width: 100%; }
+  .app-title { font-size: 1.4rem; }
+  .app-title-icon { width: 48px; height: 48px; }
 }

@@ -1,42 +1,125 @@
 .dependency-table-container {
-  margin-top: 1.5rem;
-  width: 75%;
+  width: 100%;
+  overflow-x: auto;
+  margin-top: var(--spacing-md);
+  animation: fadeIn 0.4s ease-out;
 }
 
 .dependency-table {
-  min-width: 100%;
-  background-color: #1f2937;
-  border-radius: 0.5rem;
+  width: 100%;
+  min-width: 600px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  transition: all var(--transition-base);
 }
 
 .table-header {
-  background-color: #1e40af;
-  text-align: left;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: white;
 }
 
 .table-header th {
-  padding: 0.75rem;
+  padding: var(--spacing-md) var(--spacing-lg);
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: background var(--transition-base);
 }
 
 .table-body tr {
-  border-bottom: 1px solid #374151;
+  border-bottom: 1px solid var(--gray-100);
+  transition: background-color var(--transition-fast), transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.table-body tr:hover {
+  background: rgba(76, 191, 197, 0.08);
+  transform: translateX(3px);
+  box-shadow: var(--shadow-sm);
+}
+
+.table-body tr:last-child {
+  border-bottom: none;
 }
 
 .table-body td {
-  padding: 0.75rem;
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  border-right: 1px solid var(--gray-100);
+  transition: color var(--transition-base);
+}
+
+.table-body td:last-child {
+  border-right: none;
+}
+
+/* ============================================
+   RISK BADGES
+============================================ */
+.risk-low,
+.risk-medium,
+.risk-high {
+  font-weight: 700;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-sm);
+  text-align: center;
+  display: inline-block;
+  min-width: 65px;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  transition: all var(--transition-base);
 }
 
 .risk-low {
-  color: #4ade80;
-  font-weight: 600;
+  color: #047857;
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
 }
 
 .risk-medium {
-  color: #facc15;
-  font-weight: 600;
+  color: #92400e;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
 }
 
 .risk-high {
-  color: #f87171;
-  font-weight: 600;
+  color: #991b1b;
+  background: linear-gradient(135deg, #fef2f2, #fecaca);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+============================================ */
+@media (max-width: 1024px) {
+  .dependency-table {
+    min-width: 500px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dependency-table-container {
+    margin-top: var(--spacing-sm);
+  }
+
+  .table-header th,
+  .table-body td {
+    padding: var(--spacing-sm);
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dependency-table {
+    min-width: 400px;
+  }
+
+  .table-header th,
+  .table-body td {
+    padding: 0.5rem;
+    font-size: 0.7rem;
+  }
 }
