@@ -1,0 +1,29 @@
+FROM node:18-alpine AS build
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the application code
+COPY . .
+
+# Build the React app
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+
+# Copy the build output to nginx's default directory
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Copy custom nginx configuration if needed
+COPY nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
